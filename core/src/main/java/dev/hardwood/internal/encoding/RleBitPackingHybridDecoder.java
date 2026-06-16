@@ -59,7 +59,14 @@ public class RleBitPackingHybridDecoder {
     }
 
     public void readInts(int[] buffer, int offset, int count) {
-        if (bitWidth == 0 || pos >= dataEnd) {
+        if (bitWidth == 0) {
+            return;
+        }
+        // Do not early-return solely on `pos >= dataEnd`: an RLE run or a partially-drained
+        // bit-packed group can outlive the byte cursor, and that pending run state must still
+        // be drained. This is what lets a page be decoded in bounded slices across successive
+        // calls and yield the same result as a single full-count read (#610).
+        if (pos >= dataEnd && remainingInRun == 0) {
             return;
         }
 
